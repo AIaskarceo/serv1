@@ -348,7 +348,7 @@ let availableQuestions = {
 };
 
 // Function to get a random question without repetition
-function getQuestionForGun(gun) {
+function getQuestionForGun(gun, availableQuestions) {
   if (availableQuestions[gun].length === 0) {
     availableQuestions[gun] = [["You are exhausted of this level difficulty questions. Kindly move on to the next or previous difficulty level."]]; // To stop looping of the questions
   }
@@ -410,6 +410,13 @@ wss.on("connection", (ws) => {
   ws.id = Math.random().toString(36).substr(2, 9);
   players.push({ id: ws.id, name: `Player ${players.length + 1}`, health: 200, canShoot: false });
 
+  // Initialize availableQuestions for this player
+  ws.availableQuestions = {
+    gun1: [...questionBank.gun1],
+    gun2: [...questionBank.gun2],
+    gun3: [...questionBank.gun3]
+  };
+
   // Send updated player list to all clients
   broadcast({ type: "playerUpdate", players });
 
@@ -425,7 +432,7 @@ wss.on("connection", (ws) => {
 
     if (data.type === "selectGun") {
       ws.selectedGun = data.gun;
-      const question = getQuestionForGun(data.gun);
+      const question = getQuestionForGun(data.gun, ws.availableQuestions);
       ws.currentQuestion = question.join("\n"); // Convert array to string
       ws.send(JSON.stringify({ type: "question", question }));
     }
@@ -474,7 +481,6 @@ wss.on("connection", (ws) => {
     broadcast({ type: "playerUpdate", players });
   });
 });
-
 // Function to broadcast messages to all clients
 function broadcast(data) {
   wss.clients.forEach((client) => {
